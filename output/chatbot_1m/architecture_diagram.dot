@@ -1,0 +1,25 @@
+digraph ArchitectAI {
+    rankdir=TB;
+    node [shape=box, style=rounded];
+    "VPC";
+    "Application Load Balancer";
+    "RDS";
+    "S3";
+    "CloudFront";
+    "ECS Service";
+    "ElastiCache";
+    "SQS";
+    "Auto Scaling";
+    "VPC" -> "Application Load Balancer";
+    "VPC" -> "RDS";
+    "VPC" -> "S3";
+    "VPC" -> "CloudFront";
+    "Application Load Balancer" -> "ECS Service";
+    "ECS Service" -> "ElastiCache";
+    "ECS Service" -> "SQS";
+    "ECS Service" -> "Auto Scaling";
+    "CloudFront" -> "S3";
+    "CloudFront" -> "Application Load Balancer";
+    "ECS Service" -> "RDS";
+    "ECS Service" -> "S3";
+}

@@ -1,0 +1,9 @@
+VPC
+|- Application Load Balancer
+|  `- ECS Service
+|     |- ElastiCache
+|     |- SQS
+|     `- Auto Scaling
+|- RDS
+|- S3
+`- CloudFront

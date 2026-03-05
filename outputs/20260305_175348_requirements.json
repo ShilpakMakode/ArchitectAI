@@ -1,0 +1,7 @@
+{
+  "application_type": "web application",
+  "expected_users": 1000,
+  "authentication": false,
+  "file_storage": false,
+  "global_users": false
+}

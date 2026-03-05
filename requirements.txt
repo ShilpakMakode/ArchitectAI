@@ -1,0 +1,6 @@
+streamlit>=1.43.0
+openai>=1.68.0
+python-dotenv>=1.0.1
+diagrams>=0.24.4
+graphviz>=0.20.3
+

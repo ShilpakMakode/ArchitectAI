@@ -1,0 +1,8 @@
+{
+  "Amazon ECS on AWS Fargate": "Runs containerized workloads without managing servers.",
+  "Amazon RDS PostgreSQL": "Provides managed relational storage for transactional data.",
+  "Application Load Balancer": "Distributes incoming traffic across containers for high availability.",
+  "Amazon VPC": "Creates a secure network boundary to isolate application resources.",
+  "Amazon Route 53": "Provides DNS routing and endpoint discovery for users.",
+  "Amazon CloudWatch": "Provides logs, metrics, and alerts for operational visibility."
+}

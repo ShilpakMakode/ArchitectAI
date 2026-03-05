@@ -1,0 +1,22 @@
+flowchart TD
+    VPC["VPC"]
+    Application_Load_Balancer["Application Load Balancer"]
+    RDS["RDS"]
+    S3["S3"]
+    CloudFront["CloudFront"]
+    ECS_Service["ECS Service"]
+    ElastiCache["ElastiCache"]
+    SQS["SQS"]
+    Auto_Scaling["Auto Scaling"]
+    VPC --> Application_Load_Balancer
+    VPC --> RDS
+    VPC --> S3
+    VPC --> CloudFront
+    Application_Load_Balancer --> ECS_Service
+    ECS_Service --> ElastiCache
+    ECS_Service --> SQS
+    ECS_Service --> Auto_Scaling
+    CloudFront --> S3
+    CloudFront --> Application_Load_Balancer
+    ECS_Service --> RDS
+    ECS_Service --> S3

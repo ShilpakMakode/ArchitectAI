@@ -1,0 +1,13 @@
+{
+  "compute": "Amazon ECS on AWS Fargate",
+  "database": "Amazon RDS PostgreSQL",
+  "storage": "Not Required",
+  "cdn": "Not Required",
+  "load_balancer": "Application Load Balancer",
+  "network": "Amazon VPC",
+  "dns": "Amazon Route 53",
+  "caching": "Optional",
+  "message_queue": "Optional",
+  "authentication": "Not Required",
+  "monitoring": "Amazon CloudWatch"
+}
