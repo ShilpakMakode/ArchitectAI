@@ -26,6 +26,16 @@ If your diagram is not rendered, install Graphviz system package:
 brew install graphviz
 ```
 
+## Using Groq
+
+ArchitectAI supports Groq via OpenAI-compatible API settings:
+
+```env
+OPENAI_API_KEY=your_groq_api_key
+OPENAI_BASE_URL=https://api.groq.com/openai/v1
+OPENAI_MODEL=llama-3.3-70b-versatile
+```
+
 ## Streamlit MVP Modules
 
 - `modules/requirement_parser.py`

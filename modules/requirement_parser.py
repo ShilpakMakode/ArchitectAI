@@ -7,6 +7,7 @@ contract used by downstream architecture generation.
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -43,7 +44,11 @@ class RequirementParser:
     def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4o-mini") -> None:
         self.model = model
         self.prompt_template = self._load_prompt()
-        self.client = OpenAI(api_key=api_key) if (OpenAI and api_key) else None
+        base_url = os.getenv("OPENAI_BASE_URL")
+        self.client = OpenAI(api_key=api_key, base_url=base_url) if (OpenAI and api_key) else None
+        self.last_mode = "heuristic"
+        self.last_error = ""
+        self.llm_attempted = False
 
     @staticmethod
     def _load_prompt() -> str:
@@ -92,8 +97,10 @@ class RequirementParser:
 
     def _parse_with_llm(self, user_input: str) -> Optional[Dict[str, Any]]:
         if not self.client:
+            self.last_error = "LLM client is not initialized. Check API key and openai package."
             return None
 
+        self.llm_attempted = True
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -106,9 +113,22 @@ class RequirementParser:
             )
             content = response.choices[0].message.content or "{}"
             return json.loads(content)
-        except Exception:
-            # Fallback keeps app functional even if the API call fails.
-            return None
+        except Exception as exc:
+            # Some OpenAI-compatible providers may reject response_format.
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": self.prompt_template + "\nReturn ONLY valid JSON."},
+                        {"role": "user", "content": user_input},
+                    ],
+                    temperature=0,
+                )
+                content = response.choices[0].message.content or "{}"
+                return json.loads(content)
+            except Exception as second_exc:
+                self.last_error = f"LLM parse failed. Primary: {exc}. Fallback: {second_exc}"
+                return None
 
     @staticmethod
     def _normalize_output(parsed: Dict[str, Any]) -> Dict[str, Any]:
@@ -132,5 +152,10 @@ class RequirementParser:
         if not user_input or not user_input.strip():
             raise ValueError("Requirement text cannot be empty.")
 
-        parsed = self._parse_with_llm(user_input) or self._heuristic_parse(user_input)
+        parsed = self._parse_with_llm(user_input)
+        if parsed is not None:
+            self.last_mode = "llm"
+        else:
+            self.last_mode = "heuristic"
+            parsed = self._heuristic_parse(user_input)
         return self._normalize_output(parsed)

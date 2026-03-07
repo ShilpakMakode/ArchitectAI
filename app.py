@@ -51,6 +51,7 @@ def main() -> None:
         st.subheader("Configuration")
         model = st.text_input("OpenAI Model", value=os.getenv("OPENAI_MODEL", "gpt-4o-mini"))
         use_llm = st.toggle("Use OpenAI API", value=bool(os.getenv("OPENAI_API_KEY")))
+        st.caption(f"Base URL: {os.getenv('OPENAI_BASE_URL', '(default OpenAI)')}")
         st.markdown("Install Graphviz system binary for diagram rendering.")
 
     user_input = st.text_area(
@@ -83,6 +84,22 @@ def main() -> None:
 
         explanation_engine = ExplanationEngine()
         explanations_json = explanation_engine.explain(architecture_json)
+
+        with st.expander("LLM Diagnostics", expanded=True):
+            st.write(
+                {
+                    "llm_toggle_enabled": use_llm,
+                    "api_key_loaded": bool(os.getenv("OPENAI_API_KEY")),
+                    "model": model,
+                    "base_url": os.getenv("OPENAI_BASE_URL", ""),
+                    "parser_llm_attempted": parser.llm_attempted,
+                    "parser_mode_used": parser.last_mode,
+                    "parser_error": parser.last_error,
+                    "architecture_llm_attempted": architecture_gen.llm_attempted,
+                    "architecture_mode_used": architecture_gen.last_mode,
+                    "architecture_error": architecture_gen.last_error,
+                }
+            )
 
         # Persist structured outputs for reproducibility and later modules.
         _save_json(requirements_json, OUTPUT_ROOT / f"{run_id}_requirements.json")

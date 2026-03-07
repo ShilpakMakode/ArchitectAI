@@ -7,6 +7,7 @@ requirements. It supports LLM generation with deterministic fallback.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -24,7 +25,11 @@ class ArchitectureGenerator:
     def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4o-mini") -> None:
         self.model = model
         self.prompt_template = self._load_prompt()
-        self.client = OpenAI(api_key=api_key) if (OpenAI and api_key) else None
+        base_url = os.getenv("OPENAI_BASE_URL")
+        self.client = OpenAI(api_key=api_key, base_url=base_url) if (OpenAI and api_key) else None
+        self.last_mode = "mapper"
+        self.last_error = ""
+        self.llm_attempted = False
 
     @staticmethod
     def _load_prompt() -> str:
@@ -36,8 +41,10 @@ class ArchitectureGenerator:
 
     def _generate_with_llm(self, requirements: Dict[str, Any]) -> Optional[Dict[str, str]]:
         if not self.client:
+            self.last_error = "LLM client is not initialized. Check API key and openai package."
             return None
 
+        self.llm_attempted = True
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -51,8 +58,22 @@ class ArchitectureGenerator:
             content = response.choices[0].message.content or "{}"
             parsed = json.loads(content)
             return {str(k): str(v) for k, v in parsed.items()}
-        except Exception:
-            return None
+        except Exception as exc:
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": self.prompt_template + "\nReturn ONLY valid JSON."},
+                        {"role": "user", "content": json.dumps(requirements)},
+                    ],
+                    temperature=0,
+                )
+                content = response.choices[0].message.content or "{}"
+                parsed = json.loads(content)
+                return {str(k): str(v) for k, v in parsed.items()}
+            except Exception as second_exc:
+                self.last_error = f"LLM architecture generation failed. Primary: {exc}. Fallback: {second_exc}"
+                return None
 
     @staticmethod
     def _normalize(architecture: Dict[str, Any]) -> Dict[str, str]:
@@ -80,6 +101,10 @@ class ArchitectureGenerator:
         if not isinstance(requirements, dict):
             raise ValueError("Requirements must be a dictionary.")
 
-        architecture = self._generate_with_llm(requirements) or map_requirements_to_services(requirements)
+        architecture = self._generate_with_llm(requirements)
+        if architecture is not None:
+            self.last_mode = "llm"
+        else:
+            self.last_mode = "mapper"
+            architecture = map_requirements_to_services(requirements)
         return self._normalize(architecture)
-
