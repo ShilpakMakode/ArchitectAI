@@ -16,6 +16,11 @@ def _is_enabled(service_name: str) -> bool:
     return value not in {"", "not required", "optional", "none", "n/a"}
 
 
+def _short_label(service_name: str, default: str) -> str:
+    value = (service_name or "").strip()
+    return value if _is_enabled(value) else default
+
+
 class DiagramGenerator:
     """Create architecture diagram artifacts from architecture JSON."""
 
@@ -51,38 +56,50 @@ class DiagramGenerator:
                 direction="TB",
             ):
                 users = Users("Users")
-                route53 = Route53("Route 53")
-                vpc = VPC("VPC")
-                alb = ELB("ALB")
-                compute = ECS("ECS Fargate")
-                rds = RDS("RDS")
-                s3 = S3("S3")
-                cloudwatch = Cloudwatch("CloudWatch")
+                dns_label = _short_label(architecture.get("dns", ""), "Route 53")
+                network_label = _short_label(architecture.get("network", ""), "VPC")
+                lb_label = _short_label(architecture.get("load_balancer", ""), "Load Balancer")
+                compute_label = _short_label(architecture.get("compute", ""), "Compute")
+                db_label = _short_label(architecture.get("database", ""), "Database")
+                storage_label = _short_label(architecture.get("storage", ""), "Storage")
+                cdn_label = _short_label(architecture.get("cdn", ""), "CDN")
+                queue_label = _short_label(architecture.get("message_queue", ""), "Queue")
+                cache_label = _short_label(architecture.get("caching", ""), "Cache")
+                auth_label = _short_label(architecture.get("authentication", ""), "Auth")
+                monitor_label = _short_label(architecture.get("monitoring", ""), "CloudWatch")
 
-                users >> route53
+                dns = Route53(dns_label)
+                network = VPC(network_label)
+                lb = ELB(lb_label)
+                compute = ECS(compute_label)
+                monitor = Cloudwatch(monitor_label)
+
+                users >> dns
                 if _is_enabled(architecture.get("cdn", "")):
-                    cdn = CloudFront("CloudFront")
-                    route53 >> cdn >> alb
+                    cdn = CloudFront(cdn_label)
+                    dns >> cdn >> lb
                 else:
-                    route53 >> alb
+                    dns >> lb
 
-                route53 >> vpc
-                vpc >> alb >> compute
-                compute >> cloudwatch
+                dns >> network
+                network >> lb >> compute
+                compute >> monitor
 
                 if _is_enabled(architecture.get("database", "")):
-                    compute >> rds
+                    db = RDS(db_label)
+                    compute >> db
                 if _is_enabled(architecture.get("storage", "")):
-                    compute >> s3
+                    storage = S3(storage_label)
+                    compute >> storage
                 if _is_enabled(architecture.get("message_queue", "")):
-                    queue = SQS("SQS")
+                    queue = SQS(queue_label)
                     compute >> queue
                 if _is_enabled(architecture.get("caching", "")):
-                    cache = ElastiCache("ElastiCache")
+                    cache = ElastiCache(cache_label)
                     compute >> cache
                 if _is_enabled(architecture.get("authentication", "")):
-                    auth = Cognito("Cognito")
-                    users >> auth >> alb
+                    auth = Cognito(auth_label)
+                    users >> auth >> lb
 
             return {
                 "generated": True,
@@ -95,4 +112,3 @@ class DiagramGenerator:
                 "diagram_path": "",
                 "error": f"Diagram generation failed: {exc}",
             }
-
